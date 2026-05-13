@@ -57,10 +57,12 @@
   var url;
   try { url = decodeURIComponent(raw); } catch (e) { url = raw; }
 
-  // Strict allowlist: only accept Block Artifactory user-submitted-artifacts session shares.
-  var ALLOW = 'https://artifactory.sqprod.co/artifactory/user-submitted-artifacts/claude-sessions/';
-  if (url.indexOf(ALLOW) !== 0) {
-    document.getElementById('err').textContent = 'Refusing to bounce: URL is not under ' + ALLOW;
+  // Strict allowlist: regex-match the full URL so the redirect target is bounded by
+  // a fixed pattern. Only well-formed Block Artifactory session URLs pass — refuses
+  // anything that could carry a path traversal, scheme switch, or alternate host.
+  var ALLOW_RE = /^https:\/\/artifactory\.sqprod\.co\/artifactory\/user-submitted-artifacts\/claude-sessions\/[A-Za-z0-9._\-]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jsonl\.gz$/i;
+  if (!ALLOW_RE.test(url)) {
+    document.getElementById('err').textContent = 'Refusing: URL does not match the expected Artifactory session pattern.';
     document.getElementById('err').style.display = 'block';
     return;
   }
