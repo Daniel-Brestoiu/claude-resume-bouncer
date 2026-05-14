@@ -76,9 +76,25 @@
   document.getElementById('install-cmd').textContent =
     'sq agents skills add claude-session-share && bash ~/.agents/skills/claude-session-share/install.sh ' + url;
 
-  // Best-effort auto-navigate. Most browsers block without a user gesture, but
-  // Safari and some configs let it through — try anyway.
-  try { window.location.replace(claudeUrl); } catch (e) {}
+  // Fire the custom-scheme URL through a hidden iframe rather than navigating
+  // the user's tab. The URL handler still receives the open-location event, but
+  // the bouncer page stays put — so the user keeps their GitHub PR tab (if they
+  // followed a target=_blank link) or can hit back to return to the PR.
+  function fireResume() {
+    try {
+      var f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = claudeUrl;
+      document.body.appendChild(f);
+    } catch (e) {}
+  }
+  document.getElementById('btn').addEventListener('click', function (ev) {
+    ev.preventDefault();
+    fireResume();
+  });
+  // Best-effort auto-fire on page load. Safari often honors this; Chrome/FF
+  // typically require an explicit click — which is fine, the button is there.
+  setTimeout(fireResume, 100);
 })();
 </script>
 </body>
