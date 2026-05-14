@@ -77,9 +77,8 @@
     'sq agents skills add claude-session-share && bash ~/.agents/skills/claude-session-share/install.sh ' + url;
 
   // Fire the custom-scheme URL through a hidden iframe rather than navigating
-  // the user's tab. The URL handler still receives the open-location event, but
-  // the bouncer page stays put — so the user keeps their GitHub PR tab (if they
-  // followed a target=_blank link) or can hit back to return to the PR.
+  // the user's tab. The URL handler still receives the open-location event,
+  // and the bouncer page stays put.
   function fireResume() {
     try {
       var f = document.createElement('iframe');
@@ -88,13 +87,30 @@
       document.body.appendChild(f);
     } catch (e) {}
   }
+
+  // GitHub's markdown sanitizer strips target="_blank" from <a> tags, so a
+  // single-click on a PR link lands here in the same tab — costing the user
+  // their PR view. If we arrived from a GitHub page, return there once the
+  // scheme has been dispatched.
+  function returnToReferrerIfGithub() {
+    try {
+      if (document.referrer && /^https:\/\/github\.com\//.test(document.referrer)) {
+        setTimeout(function () { history.back(); }, 700);
+      }
+    } catch (e) {}
+  }
+
   document.getElementById('btn').addEventListener('click', function (ev) {
     ev.preventDefault();
     fireResume();
+    returnToReferrerIfGithub();
   });
-  // Best-effort auto-fire on page load. Safari often honors this; Chrome/FF
-  // typically require an explicit click — which is fine, the button is there.
-  setTimeout(fireResume, 100);
+  // Best-effort auto-fire on page load (Safari often honors; Chrome/FF may
+  // require the explicit click — that's fine, the button is there).
+  setTimeout(function () {
+    fireResume();
+    returnToReferrerIfGithub();
+  }, 100);
 })();
 </script>
 </body>
